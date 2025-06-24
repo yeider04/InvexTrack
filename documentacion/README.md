@@ -10,6 +10,9 @@ Esta carpeta contiene la documentación técnica elaborada durante el desarrollo
 - **Elaboración de diagramas y plantillas para casos de uso del proyecto.pdf**  
   Incluye diagramas UML como el de casos de uso global, actividades y plantillas completas con flujos alternos, excepciones y reglas de negocio.
 
+- **Diagramas y documentación de actividades del proyecto.pdf**  
+  Contiene descripciones textuales de las actividades, diagramas UML asociados a procesos clave del sistema, relación con las historias de usuario y responsabilidades de los actores involucrados.
+
 ## 🛠️ Herramientas utilizadas
 
 - Microsoft Word 365 (documentación)
