@@ -30,4 +30,23 @@ public class GestionController {
     public List<Categoria> listarCategorias() {
         return catRepo.findAll();
     }
+
+    @Autowired
+    private ProveedorRepository provRepo;
+    @Autowired
+    private MovimientoRepository movRepo;
+
+    @Tag(name = "Proveedores", description = "Directorio de proveedores de InvexTrack")
+    @GetMapping("/proveedores")
+    @Operation(summary = "Obtener todos los proveedores")
+    public List<Proveedor> listarProveedores() {
+        return provRepo.findAll();
+    }
+
+    @Tag(name = "Movimientos", description = "Historial de entradas y salidas")
+    @GetMapping("/movimientos")
+    @Operation(summary = "Consultar historial de movimientos")
+    public List<MovimientoInventario> listarMovimientos() {
+        return movRepo.findAll();
+    }
 }
