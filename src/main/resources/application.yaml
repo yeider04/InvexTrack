@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: InvexTrack
+  datasource:
+    url: jdbc:mysql://localhost:3306/invextrack_db
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        formatSql: true
+
+# Configuración de Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
