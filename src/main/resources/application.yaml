@@ -3,16 +3,17 @@ spring:
     name: InvexTrack
   datasource:
     url: jdbc:mysql://localhost:3306/invextrack_db
-    username: root
-    password:
+    username: root #Aqui va tu usuario
+    password: #Aqui va tu contraseña
     driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always # Ejecuta schema.sql y data.sql al arrancar
+
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: none # Desactiva la creación automática de Hibernate para usar los scripts .sql
     show-sql: true
-    properties:
-      hibernate:
-        formatSql: true
 
 # Configuración de Swagger
 springdoc:

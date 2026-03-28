@@ -8,20 +8,26 @@ import java.time.LocalDate;
 @Table(name = "movimientos_inventario")
 @Data
 public class MovimientoInventario {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_movimiento")
+    @Column(name = "id_movimiento") // Coincide con PK en SQL
     private Integer id;
 
-    private String tipo; // ENTRADA o SALIDA
+    @Column(name = "tipo", nullable = false)
+    private String tipo;
+
+    @Column(name = "fecha", nullable = false)
     private LocalDate fecha;
+
+    @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
     @ManyToOne
-    @JoinColumn(name = "id_producto")
+    @JoinColumn(name = "id_producto", nullable = false)
     private Producto producto;
 
     @ManyToOne
-    @JoinColumn(name = "id_usuario")
+    @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
 }
