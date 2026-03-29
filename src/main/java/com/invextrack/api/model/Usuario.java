@@ -23,5 +23,5 @@ public class Usuario {
     private String contrasena;
 
     @Column(name = "rol", nullable = false)
-    private String rol;
+    private String rol; // Ejemplo: "ADMINISTRADOR", "OPERARIO"
 }
