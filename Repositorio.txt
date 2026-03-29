@@ -1,7 +1,2 @@
 https://github.com/yeider04/InvexTrack
 
-1. Crear una base de datos vacía llamada invextrack_db en MySQL workbench 
-
-2. Tiene que modificar el archivo en la ruta src/main/resources/application.yml con el nombre de usuario y contraseña utilizados en MySQL para la creación de la base de datos
-
-3. Y ya por ultimo ejecutar el comando ./mvnw spring-boot:run cuando este quieto se puede consultar la documentación echa con swagger en: http://localhost:8080/swagger-ui/index.html y ya las peticiones se hacen en otra ventana

@@ -34,3 +34,6 @@ build/
 
 # Variables de entorno locales (nunca subir a Git)
 .env
+
+# Enlace al repo
+Repositorio.txt
