@@ -1,6 +1,6 @@
 # InvexTrack - Sistema de Gestión de Inventarios
 
-InvexTrack es una API REST desarrollada con **Java 21** y **Spring Boot 3.4.5**, diseñada para centralizar el control de existencias, movimientos de almacén y gestión de proveedores.
+InvexTrack es una API REST desarrollada con **Java 21** y **Spring Boot 4.0.5**, diseñada para centralizar el control de existencias, movimientos de almacén y gestión de proveedores.
 
 ---
 
@@ -23,7 +23,7 @@ InvexTrack es una API REST desarrollada con **Java 21** y **Spring Boot 3.4.5**,
 ## Tecnologías Utilizadas
 
 - **Lenguaje:** Java 21
-- **Framework:** Spring Boot 3.4.5
+- **Framework:** Spring Boot 4.0.5
 - **Base de Datos:** MySQL 8.0
 - **ORM:** Spring Data JPA / Hibernate
 - **Documentación:** SpringDoc OpenAPI 2.8.6 (Swagger UI)
