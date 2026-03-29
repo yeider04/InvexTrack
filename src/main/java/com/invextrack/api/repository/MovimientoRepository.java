@@ -5,8 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repositorio para gestionar la persistencia de la tabla
- * movimientos_inventario.
+ * Repositorio JPA para operaciones de persistencia de movimientos de inventario.
  */
 @Repository
 public interface MovimientoRepository extends JpaRepository<MovimientoInventario, Integer> {
