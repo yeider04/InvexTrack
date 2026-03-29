@@ -1,15 +1,19 @@
 package com.invextrack.api.controller;
 
+import com.invextrack.api.dto.ProductoRequestDTO;
 import com.invextrack.api.model.Categoria;
 import com.invextrack.api.model.Producto;
 import com.invextrack.api.model.Proveedor;
 import com.invextrack.api.repository.CategoriaRepository;
-// import com.invextrack.api.service.ProductoService;
 import com.invextrack.api.repository.ProductoRepository;
 import com.invextrack.api.repository.ProveedorRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,106 +22,144 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Controlador REST para la gestión de productos del inventario.
+ * Expone endpoints CRUD: Crear, Consultar, Actualizar y Eliminar productos.
+ */
 @RestController
 @RequestMapping("/api/v1/productos")
-@Tag(name = "Productos", description = "Operaciones CRUD para productos")
+@Tag(name = "Productos", description = "Operaciones CRUD para la gestión de productos en el inventario")
 public class ProductoController {
 
     @Autowired
-    private ProductoRepository productoRepo;
+    private ProductoRepository productoRepository;
 
     @Autowired
-    private CategoriaRepository categoriaRepo; // Necesario para buscar la categoría
+    private CategoriaRepository categoriaRepository;
 
     @Autowired
-    private ProveedorRepository proveedorRepo; // Necesario para buscar el proveedor
+    private ProveedorRepository proveedorRepository;
 
-    // 1. CONSULTA (READ)
+    /**
+     * Retorna la lista completa de productos registrados en el sistema.
+     */
     @GetMapping
-    @Operation(summary = "Lista completa de productos")
+    @Operation(summary = "Listar todos los productos", description = "Retorna la lista completa de productos con sus categorías y proveedores asociados")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista de productos obtenida exitosamente"),
+        @ApiResponse(responseCode = "204", description = "No hay productos registrados")
+    })
     public ResponseEntity<?> listar() {
-        List<Producto> lista = productoRepo.findAll();
-
-        if (lista.isEmpty()) {
-            return ResponseEntity.noContent().build(); // Retorna 204 No Content
+        List<Producto> listaProductos = productoRepository.findAll();
+        if (listaProductos.isEmpty()) {
+            return ResponseEntity.noContent().build();
         }
-
-        return ResponseEntity.ok(lista);
+        return ResponseEntity.ok(listaProductos);
     }
 
-    // 2. INSERCIÓN (CREATE)
+    /**
+     * Busca y retorna un producto específico por su ID.
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "Consultar producto por ID", description = "Retorna un producto específico según su identificador único")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Producto encontrado"),
+        @ApiResponse(responseCode = "400", description = "Producto no encontrado con el ID proporcionado")
+    })
+    public ResponseEntity<?> buscarPorId(
+            @Parameter(description = "ID único del producto", example = "1")
+            @PathVariable Integer id) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + id));
+        return ResponseEntity.ok(producto);
+    }
+
+    /**
+     * Registra un nuevo producto en el sistema.
+     */
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody Map<String, Object> payload) {
-        // 1. Creamos la instancia de Producto
+    @Operation(summary = "Crear nuevo producto", description = "Registra un nuevo producto en el inventario. Requiere IDs válidos de categoría y proveedor existentes.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Producto creado exitosamente"),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos o categoría/proveedor no encontrados")
+    })
+    public ResponseEntity<?> crear(@Valid @RequestBody ProductoRequestDTO datosProducto) {
         Producto nuevoProducto = new Producto();
-        nuevoProducto.setNombre((String) payload.get("nombre"));
-        nuevoProducto.setDescripcion((String) payload.get("descripcion"));
-        nuevoProducto.setSku((String) payload.get("sku"));
-        nuevoProducto.setCantidad((Integer) payload.get("cantidad"));
-        nuevoProducto.setPrecioUnitario(Double.parseDouble(payload.get("precioUnitario").toString()));
-        nuevoProducto.setPrecio(Double.parseDouble(payload.get("precio").toString()));
+        nuevoProducto.setNombre(datosProducto.getNombre());
+        nuevoProducto.setDescripcion(datosProducto.getDescripcion());
+        nuevoProducto.setSku(datosProducto.getSku());
+        nuevoProducto.setCantidad(datosProducto.getCantidad());
+        nuevoProducto.setPrecioUnitario(datosProducto.getPrecioUnitario());
+        nuevoProducto.setPrecio(datosProducto.getPrecio());
 
-        // 2. Buscamos y asignamos la Categoría REAL
-        Integer idCat = (Integer) payload.get("idCategoria");
-        Categoria cat = categoriaRepo.findById(idCat)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-        nuevoProducto.setCategoria(cat);
+        Categoria categoriaAsociada = categoriaRepository.findById(datosProducto.getIdCategoria())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + datosProducto.getIdCategoria()));
+        nuevoProducto.setCategoria(categoriaAsociada);
 
-        // 3. Buscamos y asignamos el Proveedor REAL
-        Integer idProv = (Integer) payload.get("idProveedor");
-        Proveedor prov = proveedorRepo.findById(idProv)
-                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
-        nuevoProducto.setProveedor(prov);
+        Proveedor proveedorAsociado = proveedorRepository.findById(datosProducto.getIdProveedor())
+                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado con ID: " + datosProducto.getIdProveedor()));
+        nuevoProducto.setProveedor(proveedorAsociado);
 
-        // 4. Guardamos
-        Producto guardado = productoRepo.save(nuevoProducto);
-
-        return ResponseEntity.status(201).body(guardado);
+        Producto productoGuardado = productoRepository.save(nuevoProducto);
+        return ResponseEntity.status(201).body(productoGuardado);
     }
 
-    // 3. ACTUALIZACIÓN (UPDATE)
+    /**
+     * Actualiza los datos de un producto existente.
+     */
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar un producto existente")
-    public ResponseEntity<?> actualizar(@PathVariable Integer id, @RequestBody Map<String, Object> payload) {
-        // 1. Buscar si el producto existe
-        Producto productoExistente = productoRepo.findById(id)
+    @Operation(summary = "Actualizar producto existente", description = "Modifica todos los campos de un producto identificado por su ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Producto actualizado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Producto, categoría o proveedor no encontrado")
+    })
+    public ResponseEntity<?> actualizar(
+            @Parameter(description = "ID del producto a actualizar", example = "1")
+            @PathVariable Integer id,
+            @Valid @RequestBody ProductoRequestDTO datosActualizados) {
+
+        Producto productoExistente = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + id));
 
-        // 2. Actualizar datos básicos
-        productoExistente.setNombre((String) payload.get("nombre"));
-        productoExistente.setDescripcion((String) payload.get("descripcion"));
-        productoExistente.setSku((String) payload.get("sku"));
-        productoExistente.setCantidad((Integer) payload.get("cantidad"));
-        productoExistente.setPrecioUnitario(Double.parseDouble(payload.get("precioUnitario").toString()));
-        productoExistente.setPrecio(Double.parseDouble(payload.get("precio").toString()));
+        productoExistente.setNombre(datosActualizados.getNombre());
+        productoExistente.setDescripcion(datosActualizados.getDescripcion());
+        productoExistente.setSku(datosActualizados.getSku());
+        productoExistente.setCantidad(datosActualizados.getCantidad());
+        productoExistente.setPrecioUnitario(datosActualizados.getPrecioUnitario());
+        productoExistente.setPrecio(datosActualizados.getPrecio());
 
-        // 3. Actualizar Relación: Categoría
-        Integer idCat = (Integer) payload.get("idCategoria");
-        Categoria cat = categoriaRepo.findById(idCat)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-        productoExistente.setCategoria(cat);
+        Categoria categoriaAsociada = categoriaRepository.findById(datosActualizados.getIdCategoria())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + datosActualizados.getIdCategoria()));
+        productoExistente.setCategoria(categoriaAsociada);
 
-        // 4. Actualizar Relación: Proveedor
-        Integer idProv = (Integer) payload.get("idProveedor");
-        Proveedor prov = proveedorRepo.findById(idProv)
-                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
-        productoExistente.setProveedor(prov);
+        Proveedor proveedorAsociado = proveedorRepository.findById(datosActualizados.getIdProveedor())
+                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado con ID: " + datosActualizados.getIdProveedor()));
+        productoExistente.setProveedor(proveedorAsociado);
 
-        // 5. Guardar cambios
-        Producto actualizado = productoRepo.save(productoExistente);
+        Producto productoActualizado = productoRepository.save(productoExistente);
 
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("mensaje", "Producto actualizado correctamente");
-        respuesta.put("data", actualizado);
-
+        respuesta.put("data", productoActualizado);
         return ResponseEntity.ok(respuesta);
     }
 
-    // 4. ELIMINACIÓN (DELETE)
+    /**
+     * Elimina un producto del sistema por su ID.
+     */
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar un producto del sistema")
-    public void eliminar(@PathVariable Integer id) {
-        productoRepo.deleteById(id);
+    @Operation(summary = "Eliminar producto", description = "Elimina de forma permanente un producto del inventario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Producto eliminado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Producto no encontrado con el ID proporcionado")
+    })
+    public ResponseEntity<?> eliminar(
+            @Parameter(description = "ID del producto a eliminar", example = "1")
+            @PathVariable Integer id) {
+        if (!productoRepository.existsById(id)) {
+            throw new RuntimeException("Producto no encontrado con ID: " + id);
+        }
+        productoRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Producto eliminado correctamente"));
     }
-    
 }
