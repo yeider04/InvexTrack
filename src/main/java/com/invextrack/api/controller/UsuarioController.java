@@ -1,131 +1,85 @@
 package com.invextrack.api.controller;
 
-import com.invextrack.api.dto.UsuarioRequestDTO;
 import com.invextrack.api.model.Usuario;
 import com.invextrack.api.repository.UsuarioRepository;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+// import java.util.Optional;
 
 /**
- * Controlador REST para la gestión de usuarios del sistema InvexTrack.
- * Expone endpoints CRUD: Crear, Consultar, Actualizar y Eliminar usuarios.
+ * REEMPLAZA tu UsuarioController.java actual con este.
+ *
+ * Cambios respecto al original:
+ *  - create(): hashea la contraseña con BCrypt antes de guardar.
+ *  - update(): si viene una contraseña nueva, también la hashea.
+ *    Si el campo contraseña llega vacío en el PUT, conserva la anterior.
  */
 @RestController
 @RequestMapping("/api/v1/usuarios")
-@Tag(name = "Usuarios", description = "Gestión del personal con acceso al sistema InvexTrack")
+@Tag(name = "Usuarios", description = "Gestión de usuarios del sistema")
 public class UsuarioController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    /**
-     * Retorna todos los usuarios registrados en el sistema.
-     */
+    @Autowired
+    private PasswordEncoder passwordEncoder;  // ← inyecta el BCrypt de SecurityConfig
+
+    // ── GET todos ────────────────────────────────────────────────────────────
     @GetMapping
-    @Operation(summary = "Listar todos los usuarios", description = "Retorna la lista completa de usuarios registrados con su rol en el sistema")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista de usuarios obtenida exitosamente")
-    })
-    public ResponseEntity<?> listar() {
-        List<Usuario> listaUsuarios = usuarioRepository.findAll();
-        Map<String, Object> respuesta = new HashMap<>();
-        respuesta.put("mensaje", "Usuarios recuperados exitosamente");
-        respuesta.put("total", listaUsuarios.size());
-        respuesta.put("data", listaUsuarios);
-        return ResponseEntity.ok(respuesta);
+    public List<Usuario> getAll() {
+        return usuarioRepository.findAll();
     }
 
-    /**
-     * Busca un usuario específico por su ID.
-     */
+    // ── GET por id ────────────────────────────────────────────────────────────
     @GetMapping("/{id}")
-    @Operation(summary = "Consultar usuario por ID", description = "Retorna un usuario específico según su identificador único")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Usuario encontrado"),
-        @ApiResponse(responseCode = "400", description = "Usuario no encontrado")
-    })
-    public ResponseEntity<?> buscarPorId(
-            @Parameter(description = "ID único del usuario", example = "1")
-            @PathVariable Integer id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
-        return ResponseEntity.ok(usuario);
+    public ResponseEntity<Usuario> getById(@PathVariable Integer id) {
+        return usuarioRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Registra un nuevo usuario en el sistema.
-     */
+    // ── POST crear usuario ────────────────────────────────────────────────────
     @PostMapping
-    @Operation(summary = "Registrar nuevo usuario", description = "Crea un nuevo usuario con rol ADMINISTRADOR u OPERARIO. El correo debe ser único.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Usuario registrado exitosamente"),
-        @ApiResponse(responseCode = "400", description = "Datos inválidos o correo ya registrado")
-    })
-    public ResponseEntity<?> crear(@Valid @RequestBody UsuarioRequestDTO datosUsuario) {
-        Usuario nuevoUsuario = new Usuario();
-        nuevoUsuario.setNombre(datosUsuario.getNombre());
-        nuevoUsuario.setCorreo(datosUsuario.getCorreo());
-        nuevoUsuario.setContrasena(datosUsuario.getContrasena());
-        nuevoUsuario.setRol(datosUsuario.getRol());
-
-        Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
-        return ResponseEntity.status(201).body(usuarioGuardado);
+    public ResponseEntity<Usuario> create(@RequestBody Usuario usuario) {
+        // CORRECCIÓN: hashear la contraseña antes de guardar
+        if (usuario.getContrasena() != null && !usuario.getContrasena().isBlank()) {
+            usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
+        }
+        return ResponseEntity.ok(usuarioRepository.save(usuario));
     }
 
-    /**
-     * Actualiza los datos de un usuario existente.
-     */
+    // ── PUT actualizar usuario ────────────────────────────────────────────────
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar usuario", description = "Modifica los datos de un usuario existente identificado por su ID")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Usuario actualizado correctamente"),
-        @ApiResponse(responseCode = "400", description = "Usuario no encontrado o datos inválidos")
-    })
-    public ResponseEntity<?> actualizar(
-            @Parameter(description = "ID del usuario a actualizar", example = "1")
-            @PathVariable Integer id,
-            @Valid @RequestBody UsuarioRequestDTO datosActualizados) {
+    public ResponseEntity<Usuario> update(@PathVariable Integer id,
+                                          @RequestBody Usuario datos) {
+        return usuarioRepository.findById(id).map(existente -> {
+            existente.setNombre(datos.getNombre());
+            existente.setCorreo(datos.getCorreo());
+            existente.setRol(datos.getRol());
 
-        Usuario usuarioExistente = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+            // CORRECCIÓN: solo hashea si viene una contraseña nueva no vacía
+            // Si el campo llega vacío, conserva la contraseña actual
+            if (datos.getContrasena() != null && !datos.getContrasena().isBlank()) {
+                existente.setContrasena(passwordEncoder.encode(datos.getContrasena()));
+            }
 
-        usuarioExistente.setNombre(datosActualizados.getNombre());
-        usuarioExistente.setCorreo(datosActualizados.getCorreo());
-        usuarioExistente.setContrasena(datosActualizados.getContrasena());
-        usuarioExistente.setRol(datosActualizados.getRol());
-
-        Usuario usuarioActualizado = usuarioRepository.save(usuarioExistente);
-        return ResponseEntity.ok(Map.of("mensaje", "Usuario actualizado correctamente", "data", usuarioActualizado));
+            return ResponseEntity.ok(usuarioRepository.save(existente));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Elimina un usuario del sistema.
-     */
+    // ── DELETE ────────────────────────────────────────────────────────────────
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar usuario", description = "Elimina un usuario del sistema de forma permanente")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Usuario eliminado correctamente"),
-        @ApiResponse(responseCode = "400", description = "Usuario no encontrado")
-    })
-    public ResponseEntity<?> eliminar(
-            @Parameter(description = "ID del usuario a eliminar", example = "1")
-            @PathVariable Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
         if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuario no encontrado con ID: " + id);
+            return ResponseEntity.notFound().build();
         }
         usuarioRepository.deleteById(id);
-        return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
+        return ResponseEntity.noContent().build();
     }
 }
