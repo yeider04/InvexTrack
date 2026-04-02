@@ -27,3 +27,8 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+
+app:
+  jwt:
+    secret: invextrack2024SuperSecretKeyParaJWTqueDebeSerMuyLarga1234567890
+    expiration-ms: 86400000
